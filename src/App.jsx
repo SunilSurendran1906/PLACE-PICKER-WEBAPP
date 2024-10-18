@@ -16,49 +16,66 @@ function App() {
   const selectedPlace = useRef();
   const [availablePlaces, setAvailablePlaces] = useState([]);
   const [pickedPlaces, setPickedPlaces] = useState(storedPlaces);
-
   useEffect(() => {
-    // Check if geolocation is supported by the browser
-    if ("geolocation" in navigator) {
-      const getLocation = () => {
-        navigator.geolocation.getCurrentPosition(
-          (position) => {
-            // Sort places by user's current location
-            const sortedPlaces = sortPlacesByDistance(
-              AVAILABLE_PLACES,
-              position.coords.latitude,
-              position.coords.longitude
+    const getLocation = () => {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          const { latitude, longitude } = position.coords;
+
+          // Store user's location in localStorage
+          localStorage.setItem(
+            "userLocation",
+            JSON.stringify({ latitude, longitude })
+          );
+
+          // Sort places based on user's location
+          const sortedPlaces = sortPlacesByDistance(
+            AVAILABLE_PLACES,
+            latitude,
+            longitude
+          );
+          setAvailablePlaces(sortedPlaces);
+        },
+        (error) => {
+          if (error.code === error.PERMISSION_DENIED) {
+            alert("Location access denied. Please enable location services.");
+          } else if (error.code === error.POSITION_UNAVAILABLE) {
+            alert(
+              "Location information is unavailable. Please check your device settings."
             );
-
-            setAvailablePlaces(sortedPlaces);
-          },
-          (error) => {
-            if (error.code === error.PERMISSION_DENIED) {
-              alert("Location access denied. Please enable location services.");
-            } else {
-              alert("Unable to retrieve location. Please try again.");
-            }
+          } else if (error.code === error.TIMEOUT) {
+            alert("Request for location timed out. Please try again.");
+          } else {
+            alert("Unable to retrieve location. Please try again.");
           }
-        );
-      };
-
-      // Request location access
-      navigator.permissions.query({ name: "geolocation" }).then((result) => {
-        if (result.state === "granted") {
-          getLocation();
-        } else if (result.state === "prompt") {
-          getLocation(); // Prompts for permission if not yet granted
-        } else if (result.state === "denied") {
-          alert("Please allow location access in your browser settings.");
         }
+      );
+    };
 
-        // Recheck the permission status when the state changes
-        result.onchange = () => {
+    if ("geolocation" in navigator) {
+      navigator.permissions
+        .query({ name: "geolocation" })
+        .then((result) => {
           if (result.state === "granted") {
+            getLocation(); // If permission is already granted
+          } else if (result.state === "prompt") {
+            // If prompt is needed, force it by requesting the location
             getLocation();
+          } else if (result.state === "denied") {
+            alert("Please allow location access in your browser settings.");
           }
-        };
-      });
+
+          // Watch for permission changes
+          result.onchange = () => {
+            if (result.state === "granted") {
+              getLocation();
+            }
+          };
+        })
+        .catch(() => {
+          // In case the permissions API is not supported, directly request geolocation
+          getLocation();
+        });
     } else {
       alert("Geolocation is not supported by this browser.");
     }
