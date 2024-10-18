@@ -18,15 +18,50 @@ function App() {
   const [pickedPlaces, setPickedPlaces] = useState(storedPlaces);
 
   useEffect(() => {
-    navigator.geolocation.getCurrentPosition((position) => {
-      const sortPlaces = sortPlacesByDistance(
-        AVAILABLE_PLACES,
-        position.coords.latitude,
-        position.coords.longitude
-      );
+    // Check if geolocation is supported by the browser
+    if ("geolocation" in navigator) {
+      const getLocation = () => {
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            // Sort places by user's current location
+            const sortedPlaces = sortPlacesByDistance(
+              AVAILABLE_PLACES,
+              position.coords.latitude,
+              position.coords.longitude
+            );
 
-      setAvailablePlaces(sortPlaces);
-    });
+            setAvailablePlaces(sortedPlaces);
+          },
+          (error) => {
+            if (error.code === error.PERMISSION_DENIED) {
+              alert("Location access denied. Please enable location services.");
+            } else {
+              alert("Unable to retrieve location. Please try again.");
+            }
+          }
+        );
+      };
+
+      // Request location access
+      navigator.permissions.query({ name: "geolocation" }).then((result) => {
+        if (result.state === "granted") {
+          getLocation();
+        } else if (result.state === "prompt") {
+          getLocation(); // Prompts for permission if not yet granted
+        } else if (result.state === "denied") {
+          alert("Please allow location access in your browser settings.");
+        }
+
+        // Recheck the permission status when the state changes
+        result.onchange = () => {
+          if (result.state === "granted") {
+            getLocation();
+          }
+        };
+      });
+    } else {
+      alert("Geolocation is not supported by this browser.");
+    }
   }, []);
 
   function handleStartRemovePlace(id) {
