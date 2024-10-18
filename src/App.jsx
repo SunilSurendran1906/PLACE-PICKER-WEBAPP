@@ -54,7 +54,11 @@ function App() {
         setAvailablePlaces(sortedPlaces);
       } catch (error) {
         if (error.code === error.PERMISSION_DENIED) {
-          alert("Location access denied. Please enable location services.");
+          alert(
+            "Location access denied. Please enable location services and refresh the page again."
+          );
+          // Optional: Automatically refresh after alert (uncomment if desired)
+          // setTimeout(() => window.location.reload(), 5000); // Refresh after 5 seconds
         } else {
           alert("Unable to retrieve location. Please try again.");
         }
@@ -127,7 +131,7 @@ function App() {
           you have visited.
         </p>
       </header>
-      
+
       {/* Display loader when loading */}
       {loading ? (
         <p>Loading places...</p>
