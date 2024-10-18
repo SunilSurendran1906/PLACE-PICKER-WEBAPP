@@ -41,57 +41,34 @@ function App() {
     });
   };
 
-  // Function to fetch and sort places based on geolocation
-  const fetchLocationAndPlaces = async () => {
-    try {
-      const { latitude, longitude } = await getLocation();
-      const sortedPlaces = sortPlacesByDistance(
-        AVAILABLE_PLACES,
-        latitude,
-        longitude
-      );
-      setAvailablePlaces(sortedPlaces);
-    } catch (error) {
-      if (error.code === error.PERMISSION_DENIED) {
-        alert("Location access denied. Please enable location services.");
-      } else {
-        alert("Unable to retrieve location. Please try again.");
-      }
-    } finally {
-      setLoading(false); // End loading when data is fetched
-    }
-  };
-
-  // UseEffect to get the location on page load
+  // UseEffect to get the location and sort places
   useEffect(() => {
-    // Check for geolocation permission
-    navigator.permissions.query({ name: "geolocation" }).then((result) => {
-      if (result.state === "granted") {
-        // If permission is already granted, fetch the location and places immediately
-        fetchLocationAndPlaces();
-      } else if (result.state === "prompt") {
-        // If permission prompt is shown, wait for the user to grant access
-        getLocation()
-          .then(() => {
-            fetchLocationAndPlaces(); // Fetch the data once location access is granted
-          })
-          .catch(() => {
-            setLoading(false); // Stop loading if permission is denied
-          });
-      } else if (result.state === "denied") {
-        alert("Please allow location access in your browser settings.");
-        setLoading(false);
-      }
-
-      // Listen for changes in permission state
-      result.onchange = () => {
-        if (result.state === "granted") {
-          fetchLocationAndPlaces(); // Fetch location and places if permission is granted after a change
-        } else if (result.state === "denied") {
+    const fetchLocationAndPlaces = async () => {
+      try {
+        const { latitude, longitude } = await getLocation();
+        const sortedPlaces = sortPlacesByDistance(
+          AVAILABLE_PLACES,
+          latitude,
+          longitude
+        );
+        setAvailablePlaces(sortedPlaces);
+      } catch (error) {
+        if (error.code === error.PERMISSION_DENIED) {
           alert("Location access denied. Please enable location services.");
+        } else {
+          alert("Unable to retrieve location. Please try again.");
         }
-      };
-    });
+      } finally {
+        setLoading(false); // End loading when data is fetched
+      }
+    };
+
+    if ("geolocation" in navigator) {
+      fetchLocationAndPlaces();
+    } else {
+      alert("Geolocation is not supported by this browser.");
+      setLoading(false); // Stop loading if geolocation is not supported
+    }
   }, []);
 
   function handleStartRemovePlace(id) {
